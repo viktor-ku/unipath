@@ -2,15 +2,13 @@ use std::collections::VecDeque;
 use std::ffi::{OsStr, OsString};
 use std::fmt::Debug;
 use std::os::unix::ffi::OsStrExt;
+use std::path::Display;
 
-use crate::path_bytes::PathBytes;
-
-const C_SLASH: u8 = '/' as u8;
-const C_DOT: u8 = '.' as u8;
+use crate::path_like::PathLike;
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Path {
-    inner: VecDeque<PathBytes>,
+    inner: VecDeque<PathLike>,
 }
 
 impl Path {
@@ -20,36 +18,51 @@ impl Path {
         }
     }
 
-    pub fn root() -> Self {
-        "/".into()
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    pub fn inner_bytes(&self) -> Vec<u8> {
+        let mut v = Vec::with_capacity(self.inner.len());
+        for it in &self.inner {
+            v.extend_from_slice(&it.inner_bytes());
+        }
+        v
     }
 
     pub fn prepend<T>(&mut self, value: T)
     where
-        T: Into<PathBytes>,
+        T: Into<PathLike>,
     {
         self.push_front(value);
     }
 
     pub fn push_front<T>(&mut self, value: T)
     where
-        T: Into<PathBytes>,
+        T: Into<PathLike>,
     {
         self.inner.push_front(value.into());
     }
 
+    pub fn push_back<T>(&mut self, value: T)
+    where
+        T: Into<PathLike>,
+    {
+        self.inner.push_back(value.into());
+    }
+
     pub fn append<T>(&mut self, value: T)
     where
-        T: Into<PathBytes>,
+        T: Into<PathLike>,
     {
         self.push_back(value);
     }
 
-    pub fn push_back<T>(&mut self, value: T)
+    pub fn join<T>(&mut self, value: T)
     where
-        T: Into<PathBytes>,
+        T: Into<PathLike>,
     {
-        self.inner.push_back(value.into());
+        self.append(value);
     }
 }
 
@@ -99,106 +112,71 @@ impl From<std::path::PathBuf> for Path {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//
-//     use super::*;
-//     use pretty_assertions::assert_eq;
-//     use std::ffi::{OsStr, OsString};
-//
-//     #[test]
-//     fn impl_from_arr_32() {
-//         let arr: [u8; C_ARR_32] = [0; C_ARR_32];
-//
-//         let p: Path = arr.into();
-//
-//         assert_eq!(
-//             p.inner,
-//             VecDeque::from_iter([PathBytes::Owned(Owned::Arr(arr))])
-//         );
-//     }
-//
-//     #[test]
-//     fn impl_from_small_byte_slice() {
-//         let p: Path = "small".as_bytes().into();
-//
-//         assert_eq!(
-//             p.inner[0],
-//             PathBytes::Owned(Owned::Arr({
-//                 let mut a = [0u8; C_ARR_32];
-//                 a[0] = 's' as u8;
-//                 a[1] = 'm' as u8;
-//                 a[2] = 'a' as u8;
-//                 a[3] = 'l' as u8;
-//                 a[4] = 'l' as u8;
-//                 a
-//             })),
-//         );
-//     }
-//
-//     #[test]
-//     fn impl_from_large_byte_slice() {
-//         let p: Path = "this_supposed_filename_is_longer_than_32".as_bytes().into();
-//
-//         assert_eq!(
-//             p.inner[0],
-//             PathBytes::Owned(Owned::Buf(Box::from(
-//                 "this_supposed_filename_is_longer_than_32".as_bytes()
-//             ))),
-//         );
-//     }
-//
-//     #[test]
-//     fn impl_from_str() {
-//         let p: Path = "home".into();
-//
-//         assert_eq!(p.inner[0], PathBytes::Owned(Owned::Str(Box::from("home"))),);
-//     }
-//
-//     #[test]
-//     fn impl_from_string() {
-//         let p: Path = String::from("home").into();
-//
-//         assert_eq!(p.inner[0], PathBytes::Owned(Owned::Str(Box::from("home"))),);
-//     }
-//
-//     #[test]
-//     fn impl_from_os_str() {
-//         let p: Path = OsStr::new("home").into();
-//
-//         assert_eq!(
-//             p.inner[0],
-//             PathBytes::Owned(Owned::Buf(Box::from("home".as_bytes()))),
-//         );
-//     }
-//
-//     #[test]
-//     fn impl_from_os_string() {
-//         let p: Path = OsString::from("home").into();
-//
-//         assert_eq!(
-//             p.inner[0],
-//             PathBytes::Owned(Owned::Buf(Box::from("home".as_bytes()))),
-//         );
-//     }
-//
-//     #[test]
-//     fn impl_from_std_path() {
-//         let p: Path = std::path::Path::new("home").into();
-//
-//         assert_eq!(
-//             p.inner[0],
-//             PathBytes::Owned(Owned::Buf(Box::from("home".as_bytes()))),
-//         );
-//     }
-//
-//     #[test]
-//     fn impl_from_std_pathbuf() {
-//         let p: Path = std::path::PathBuf::from("home").into();
-//
-//         assert_eq!(
-//             p.inner[0],
-//             PathBytes::Owned(Owned::Buf(Box::from("home".as_bytes()))),
-//         );
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod push_back {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn one_literal_home() {
+            let mut path = Path::new();
+            path.push_back("home");
+            assert_eq!(path.inner_bytes(), "home".as_bytes());
+        }
+
+        #[test]
+        fn one_bunch() {
+            let mut path = Path::new();
+            path.push_back("a/b/c");
+            assert_eq!(path.inner_bytes(), "a/b/c".as_bytes());
+        }
+
+        #[test]
+        fn one_after_another() {
+            let mut path = Path::new();
+            path.push_back("one");
+            path.push_back("two");
+            assert_eq!(path.inner_bytes(), "onetwo".as_bytes());
+        }
+    }
+
+    mod push_front {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn one_literal_home() {
+            let mut path = Path::new();
+            path.push_front("home");
+            assert_eq!(path.inner_bytes(), "home".as_bytes());
+        }
+
+        #[test]
+        fn one_bunch() {
+            let mut path = Path::new();
+            path.push_front("a/b/c");
+            assert_eq!(path.inner_bytes(), "a/b/c".as_bytes());
+        }
+
+        #[test]
+        fn one_after_another() {
+            let mut path = Path::new();
+            path.push_front("one");
+            path.push_front("two");
+            assert_eq!(path.inner_bytes(), "twoone".as_bytes());
+        }
+    }
+
+    mod path_new {
+        use super::*;
+
+        #[test]
+        fn creates_new() {
+            let path = Path::new();
+            assert!(path.is_empty());
+        }
+    }
+}

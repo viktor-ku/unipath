@@ -2,4 +2,7 @@
 
 > An attempt to replace Rust's std Path
 
-TBD
+## Differences
+
+- Operates on top of bytes `&[u8]` or str slices `&str`
+    instead of `OsStr`
