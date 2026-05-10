@@ -15,4 +15,5 @@ categories = [
   "std",
 ]
 
-[dependencies]
+[dev-dependencies]
+pretty_assertions = "=1.4.1"
