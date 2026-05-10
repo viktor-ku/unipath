@@ -1,63 +1,53 @@
+use crate::arr::err::ArrError;
+
 use super::bracket::Bracket;
 use super::constants::*;
 use super::data::Data;
 use std::ptr;
 
-#[derive(Debug, thiserror::Error)]
-pub enum ArrError {
-    #[error("Does not fit into any of the arr brackets")]
-    TooLong,
-
-    #[error("Empty")]
-    Empty,
-
-    #[error("Impossible")]
-    Impossible,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Arr {
+pub(crate) struct Arr {
     data: Data,
 }
 
 impl Arr {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self::with_capacity_0()
     }
 
-    pub fn with_capacity_0() -> Self {
+    fn with_capacity_0() -> Self {
         Self {
             data: Data::with_capacity_0(),
         }
     }
 
-    pub fn with_capacity_8() -> Self {
+    fn with_capacity_8() -> Self {
         Self {
             data: Data::with_capacity_8(),
         }
     }
 
-    pub fn with_capacity_16() -> Self {
+    fn with_capacity_16() -> Self {
         Self {
             data: Data::with_capacity_16(),
         }
     }
 
-    pub fn with_capacity_32() -> Self {
+    fn with_capacity_32() -> Self {
         Self {
             data: Data::with_capacity_32(),
         }
     }
 
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.data.len()
     }
 
-    pub fn capacity(&self) -> usize {
+    fn capacity(&self) -> usize {
         self.data.capacity()
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         match &self.data {
             Data::_0 => &[],
             Data::_8(it) => &it[..self.len()],
@@ -66,7 +56,7 @@ impl Arr {
         }
     }
 
-    pub fn replace_with<S>(&mut self, input: S) -> Result<(), ArrError>
+    fn replace_with<S>(&mut self, input: S) -> Result<(), ArrError>
     where
         S: AsRef<[u8]>,
     {
@@ -135,7 +125,7 @@ impl Arr {
         }
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.data.clear();
     }
 }

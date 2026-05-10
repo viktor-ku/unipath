@@ -1,4 +1,6 @@
-pub mod arr;
-pub mod bracket;
-pub mod constants;
-pub mod data;
+mod bracket;
+mod constants;
+mod data;
+mod err;
+
+pub(crate) mod arr;

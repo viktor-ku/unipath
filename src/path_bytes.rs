@@ -1,7 +1,7 @@
 use std::ffi::{OsStr, OsString};
 use std::os::unix::ffi::OsStrExt;
 
-pub const C_ARR_32: usize = 32;
+use crate::arr::arr::Arr;
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub enum PathBytes {
@@ -10,19 +10,13 @@ pub enum PathBytes {
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Owned {
-    Arr([u8; C_ARR_32]),
+    Arr(Arr),
     Buf(Box<[u8]>),
     Str(Box<str>),
 }
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Ref {}
-
-impl Into<PathBytes> for [u8; C_ARR_32] {
-    fn into(self) -> PathBytes {
-        PathBytes::Owned(Owned::Arr(self))
-    }
-}
 
 impl Into<PathBytes> for &[u8] {
     fn into(self) -> PathBytes {
