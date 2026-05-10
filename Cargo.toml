@@ -1,0 +1,18 @@
+[package]
+name = "unipath"
+version = "0.0.0"
+authors = [
+  "Viktor Kuroljov",
+  "viktor.konsta@gmail.com",
+]
+description = "Replacement for the std Path"
+edition = "2024"
+license = "MIT"
+keywords = [
+  "path",
+]
+categories = [
+  "std",
+]
+
+[dependencies]
