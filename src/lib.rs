@@ -12,14 +12,8 @@ enum Token {
     // Administrative path tokens
     //
     //
-    /// Token indicating the beginning of the path encoding.
-    ///
-    /// Only allowed once.
-    ///
-    /// Note: any other slashes (`/`, `\\`, etc.) are omitted
-    /// by design from internal storage and only added in
-    /// representation layer later.
-    Head,
+    /// `\0`
+    Null,
 
     /// `.`
     Dot1,
@@ -27,10 +21,12 @@ enum Token {
     /// `..`
     Dot2,
 
-    /// Will resolve to `/home/<username>` after user provides the username.
+    /// Will resolve to `/home/<username>`
+    /// after user provides the username.
     UserHome,
 
-    /// Will resolve to `/home/<username>/.config` after user provides the username.
+    /// Will resolve to `/home/<username>/.config`
+    /// after user provides the username.
     UserConfig,
 
     //
@@ -287,31 +283,26 @@ mod tests {
     }
 
     #[test]
-    fn token_converts_to_byte() {
-        assert_eq!(Token::Head.byte(), u8::from(Token::Head));
-        assert_eq!(Token::Inline8.byte(), 254);
-        assert_eq!(Token::Inline16.byte(), 255);
-    }
-
-    #[test]
     fn compose_packed_user_config_nvim_path() {
         let username = "victoria";
 
         let mut v: Vec<u8> = vec![
-            Token::Head.byte(),
             Token::Home.byte(),
             Token::Inline8.byte(),
             username.len() as u8,
         ];
 
         v.extend_from_slice(username.as_bytes());
-        v.push(Token::DotConfig.byte());
-        v.push(Token::Nvim.byte());
+
+        v.extend([
+            Token::Null.byte(),
+            Token::DotConfig.byte(),
+            Token::Nvim.byte(),
+        ]);
 
         assert_eq!(
             v,
             vec![
-                Token::Head.byte(),
                 Token::Home.byte(),
                 Token::Inline8.byte(),
                 8,
@@ -323,6 +314,7 @@ mod tests {
                 b'r',
                 b'i',
                 b'a',
+                Token::Null.byte(),
                 Token::DotConfig.byte(),
                 Token::Nvim.byte(),
             ],
