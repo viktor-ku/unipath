@@ -62,6 +62,14 @@ impl Path {
     }
 
     pub fn push(&mut self, component: &str) {
+        if component.is_empty() {
+            return;
+        }
+
+        if component.as_bytes()[0] == '/' as u8 {
+            return self.push(&component[1..]);
+        }
+
         match component {
             _ => {
                 self.indicies.push(self.inner.len());
@@ -80,6 +88,21 @@ mod tests {
 
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn push_with_slashes() {
+        let mut path = Path::new();
+
+        path.push("/hello");
+
+        assert_eq!(path.len(), 1);
+        assert_eq!(path.display().as_str(), "/hello");
+
+        path.push("/world");
+
+        assert_eq!(path.len(), 2);
+        assert_eq!(path.display().as_str(), "/hello/world");
+    }
 
     #[test]
     fn push_several_plain() {
